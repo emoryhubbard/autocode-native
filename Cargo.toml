@@ -1,3 +1,10 @@
+members = [
+    "src",
+    "src/library/prompt.rs",  # Add the relative path to your new Rust file
+    "src/library/log_and_run.rs",
+    "src/library/extract_js.rs",
+    "src/library/get_feature.rs"
+]
 [package]
 name = "autocode-native"
 version = "0.1.0"
@@ -6,7 +13,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.81"
 dotenvy = "0.15.7"
+firestore-db-and-auth = "0.8.0"
+futures = "0.3.30"
 reqwest = { version = "0.11.26", features = ["blocking", "json"] }
+serde = "1.0.197"
 serde_json = "1.0.114"
 tokio = { version="1.36.0", features = ["full"] }

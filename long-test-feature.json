@@ -1,0 +1,83 @@
+{
+  "description": "Add a Last-Visited indicator on the home page.",
+  "status": "Not Started",
+  "steps": [
+    {
+      "description": "Add a function called setLastVisit to page.jsx that uses the setLocalStorage function in utils.mjs. to set lastVisit as the current time.",
+      "target": "page.jsx",
+      "files": [
+        {
+          "fileName": "page.jsx",
+          "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/page.jsx",
+          "fileContents": "// Content of page.jsx file",
+          "isTarget": true
+        },
+        {
+          "fileName": "utils.mjs",
+          "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/components/utils.mjs",
+          "fileContents": "// Content of utils.mjs file",
+          "isTarget": false
+        }
+      ],
+      "testPath": "http://localhost:3000"
+    },
+    {
+      "description": "Add a function called getLastVisit to page.jsx that uses the getLocalStorage function in utils.mjs.",
+      "target": "page.jsx",
+      "files": [
+        {
+          "fileName": "page.jsx",
+          "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/page.jsx",
+          "fileContents": "// Content of page.jsx file",
+          "isTarget": true
+        },
+        {
+          "fileName": "utils.mjs",
+          "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/components/utils.mjs",
+          "fileContents": "// Content of utils.mjs file",
+          "isTarget": false
+        }
+      ],
+      "testPath": "http://localhost:3000"
+    },
+    {
+      "description": "Add a prop called lastVisit to the useState in page.jsx and set its initial value with getLastVisit, and add that same lastVisit to the setAllValues function in useEffect as well.",
+      "target": "page.jsx",
+      "files": [
+        {
+          "fileName": "page.jsx",
+          "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/page.jsx",
+          "fileContents": "// Content of page.jsx file",
+          "isTarget": true
+        }
+      ],
+      "testPath": "http://localhost:3000"
+    },
+    {
+      "description": "In the useEffect hook in page.jsx, call setLastVisit with the current time.",
+      "target": "page.jsx",
+      "files": [
+        {
+          "fileName": "page.jsx",
+          "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/page.jsx",
+          "fileContents": "// Content of page.jsx file",
+          "isTarget": true
+        }
+      ],
+      "testPath": "http://localhost:3000"
+    },
+    {
+      "description": "Modify the h1 in page.jsx to say Transform Your Styles: Last Visited [insert time here]. Instead of insert time here, use the lastVisit prop.",
+      "target": "page.jsx",
+      "files": [
+        {
+          "fileName": "page.jsx",
+          "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/page.jsx",
+          "fileContents": "// Content of page.jsx file",
+          "isTarget": true
+        }
+      ],
+      "testPath": "http://localhost:3000"
+    }
+  ]
+}
