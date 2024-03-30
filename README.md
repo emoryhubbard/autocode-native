@@ -1,8 +1,8 @@
 # Autocode Native
 
-Autocode Native is a Rust-based application developed to run natively on Ubuntu. It is designed to improve upon the [Autocode Classic](https://github.com/emoryhubbard/Autocode) web app by helping React developers automate adding features to their apps, with the goal of leveraging task decomposition and a task management algorithm to create incremental, tested changes before moving on to the next step of the job.
+Autocode Native is a Rust-based application developed to run natively on Ubuntu. It is designed to improve upon the [Autocode Classic](https://github.com/emoryhubbard/Autocode?tab=readme-ov-file#autocode-classic) web app by helping React developers automate adding features to their apps, with the goal of leveraging task decomposition and a task management algorithm to create incremental, tested changes before moving on to the next step of the job.
 
-**[Earliest Autocode Native Demo Video](https://youtu.be/eV3pdysg3aE)** (see the [Autocode repo](https://github.com/emoryhubbard/Autocode) for the current status of the project)
+**[First Autocode Native Demo Video](https://youtu.be/eV3pdysg3aE)** (see the [Autocode repo](https://github.com/emoryhubbard/Autocode) for the current status of the project)
 
 # Development Environment
 
