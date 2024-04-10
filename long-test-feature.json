@@ -19,7 +19,8 @@
           "isTarget": false
         }
       ],
-      "testPath": "http://localhost:3000"
+      "testPath": "http://localhost:3000",
+      "showHTML": "false"
     },
     {
       "description": "Add a function called getLastVisit to page.jsx that uses the getLocalStorage function in utils.mjs.",
@@ -38,7 +39,8 @@
           "isTarget": false
         }
       ],
-      "testPath": "http://localhost:3000"
+      "testPath": "http://localhost:3000",
+      "showHTML": "false"
     },
     {
       "description": "Add a prop called lastVisit to the useState in page.jsx and set its initial value with getLastVisit, and add that same lastVisit to the setAllValues function in useEffect as well.",
@@ -51,7 +53,8 @@
           "isTarget": true
         }
       ],
-      "testPath": "http://localhost:3000"
+      "testPath": "http://localhost:3000",
+      "showHTML": "false"
     },
     {
       "description": "In the useEffect hook in page.jsx, call setLastVisit with the current time.",
@@ -64,7 +67,8 @@
           "isTarget": true
         }
       ],
-      "testPath": "http://localhost:3000"
+      "testPath": "http://localhost:3000",
+      "showHTML": "false"
     },
     {
       "description": "Modify the h1 in page.jsx to say Transform Your Styles: Last Visited [insert time here]. Instead of insert time here, use the lastVisit prop.",
@@ -77,7 +81,8 @@
           "isTarget": true
         }
       ],
-      "testPath": "http://localhost:3000"
+      "testPath": "http://localhost:3000",
+      "showHTML": "true"
     }
   ]
 }
