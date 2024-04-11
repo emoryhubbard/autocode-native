@@ -1,5 +1,6 @@
 use serde_json::{json, Value};
-use std::fs;
+use std::path::{Path, PathBuf};
+use std::{clone, env, fs};
 use anyhow::{Context, Result}; // Importing Result and Context from anyhow crate
 use dotenvy::dotenv;
 mod library;
@@ -11,44 +12,220 @@ use library::remove_feature::remove_feature;
 use library::get_updated_functions::get_updated_functions;
 use std::thread;
 use std::time::Duration;
+use std::fs::File;
+use std::io::Write;
+use std::process::Command;
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
-    let src_path = "/home/emoryhubbardiv/Documents/tailwindify/src/app/";
-
-    /* Local JSON mode: let mut feature_data = json!({"feature": {...
+    /* Local JSON mode and Remote JSON mode: let mut feature_data = json!({"feature": {...
       Or uncomment the lines below to use json file */
-    let feature_data_str = fs::read_to_string("long-test-feature.json")
-      .with_context(|| format!("Failed to read file: {}", "long-test-feature.json"))
+    let feature_data_str = fs::read_to_string("feature.json")
+      .with_context(|| format!("Failed to read file: {}", "feature.json"))
       .unwrap();
     let mut feature_data: Value = serde_json::from_str(&feature_data_str)
-      .with_context(|| format!("Failed to deserialize JSON data from file: {}", "long-test-feature.json"))
+      .with_context(|| format!("Failed to deserialize JSON data from file: {}", "feature.json"))
+      .unwrap();
+    let feature_data_immut: Value = serde_json::from_str(&feature_data_str)
+      .with_context(|| format!("Failed to deserialize JSON data from file: {}", "feature.json"))
       .unwrap();
 
     /* API JSON mode: uncomment the lines below, as well the remove
     feature line further down */
     /*let mut feature_data: Value = get_feature().await.unwrap();
-    println!("Feature data: {:?}", feature_data);
-    let doc_id = feature_data["docId"].as_str().unwrap().to_string();*/
-
+    println!("Feature data: {:?}", feature_data);*/
+    
+    /* Remote JSON mode and API JSON mode: uncomment the line below, as well the remove
+    feature line further down */
+    let doc_id = feature_data["docId"].as_str().unwrap().to_string();
+    
     let steps = &mut feature_data["steps"];
+    let steps_immut = feature_data_immut["steps"].as_array().unwrap();
 
-    let mut successful = true;
-    for step in steps.as_array_mut().unwrap() {
-      if let Err(err) = execute_step(step).await {
+    // Create Autocode's own .env using feature data
+    if !Path::new(".env").exists() {
+      fs::File::create(".env")
+          .expect("Failed to create .env file");
+    }
+    fs::write(".env", feature_data_immut["autocodeDotenv"].as_str().unwrap()).expect("Failed to write .env file");
+    dotenv().ok();
+
+    if std::env::var("CLONING").unwrap() == "true" {
+      println!("Cloning reads true.");
+      clone_autocode(feature_data_immut["autocodeDotenv"].as_str().unwrap(), feature_data_immut["serviceJSON"].as_str().unwrap()).await;
+    }
+
+    // Clone repository if needed
+    let first_step = &steps_immut[0];
+    let cloned_dir: Option<PathBuf> = if let Ok(cloning) = std::env::var("CLONING") {
+      if cloning == "true" {
+          if let Some(repo_url) = feature_data_immut["repoURL"].as_str() {
+              Some(clone_repository(repo_url, feature_data_immut["dotenvContents"].as_str().unwrap(), first_step["testPath"].as_str().unwrap()).await.unwrap())
+          } else {
+              eprintln!("CLONING=true but repoURL is not provided in the feature data.");
+              None
+          }
+      } else {
+          None
+      }
+  } else {
+      None
+  };
+
+  // Check if cloned_dir is uninitialized
+  if cloned_dir.is_none() {
+      // Handle uninitialized cloned_dir
+      eprintln!("cloned_dir is uninitialized.");
+      return;
+  }
+  let cloned_dir = cloned_dir.unwrap(); // Unwrap cloned_dir safely since we've checked it
+  let mut successful = true;
+  for step in steps.as_array_mut().unwrap() {
+      if let Err(err) = execute_step(step, cloned_dir.clone()).await {
           successful = false;
           let error_message = "Custom error message system not yet implemented.";
           eprintln!("Error executing step: {}\n", error_message);
           break;
       }
-    }
-    if successful {
+  }
+
+  if successful {
       println!("Feature completed. Tests passed at each step.\n");
-    }
-    // API JSON mode: uncomment the line below
-    //remove_feature(&doc_id).await.unwrap();
+      // Remote JSON mode and API JSON mode: uncomment the line below
+      remove_feature(&doc_id).await.unwrap();
+  }
 }
+
+async fn clone_autocode(dotenv_contents: &str, service_json: &str) -> Result<PathBuf> {
+  let repo_url = "https://github.com/emoryhubbard/express-autocode-api.git";
+  // Get the current directory
+  let original_dir = std::env::current_dir()
+      .with_context(|| "Failed to get current directory")?;
+
+  // Get the parent directory of the current working directory
+  let parent_dir = original_dir
+      .parent()
+      .ok_or_else(|| anyhow::anyhow!("Failed to determine parent directory"))?;
+
+  // Define the directory path for cloning the repository
+  let clone_dir = parent_dir.join("express-autocode-api");
+
+  // Clone the repository into the parent directory
+  let output = Command::new("git")
+      .arg("clone")
+      .arg(repo_url)
+      .arg(&clone_dir)
+      .output()
+      .with_context(|| "Failed to execute git clone")?;
+  
+  if !output.status.success() {
+      return Err(anyhow::anyhow!("Failed to clone repository"));
+  }
+
+  // Change current directory to the cloned repository
+  std::env::set_current_dir(&clone_dir)
+      .with_context(|| format!("Failed to change directory to {}", clone_dir.display()))?;
+  // Write .env file
+  let mut env_file = std::fs::File::create(".env")
+      .with_context(|| "Failed to create .env file")?;
+  env_file.write_all(dotenv_contents.as_bytes())
+      .with_context(|| "Failed to write to .env file")?;
+
+  // Write serviceAccountKey.json file
+  let mut service_file = std::fs::File::create("serviceAccountKey.json")
+    .with_context(|| "Failed to create service file")?;
+  service_file.write_all(service_json.as_bytes())
+    .with_context(|| "Failed to write to service file")?;
+
+  // Run npm install
+  let output = Command::new("npm")
+      .arg("install")
+      .output()
+      .with_context(|| "Failed to execute npm install")?;
+  
+  if !output.status.success() {
+      return Err(anyhow::anyhow!("Failed to install npm dependencies"));
+  }
+
+  /*let _output = tokio::process::Command::new("npm")
+        .arg("run")
+        .arg("dev")
+        .output();*/
+  // Run npm run dev in a terminal
+  Command::new("gnome-terminal")
+      .arg("--wait") // Add the --wait option to keep the terminal open
+      .arg("--")
+      .arg("npm")
+      .arg("run")
+      .arg("dev")
+      .spawn()
+      .with_context(|| "Failed to execute npm run dev in a terminal")?;
+  thread::sleep(Duration::from_secs(6)); // giving TypeScript time to compile code
+
+  env::set_current_dir(original_dir.clone())
+      .with_context(|| format!("Failed to change directory to {}", original_dir.display()))?;
+  Ok((clone_dir))
+}
+
+async fn clone_repository(repo_url: &str, dotenv_contents: &str, test_path: &str) -> Result<PathBuf> {
+    // Get the current directory
+    let current_dir = std::env::current_dir()
+        .with_context(|| "Failed to get current directory")?;
+
+    // Get the parent directory of the current working directory
+    let parent_dir = current_dir
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Failed to determine parent directory"))?;
+
+    // Define the directory path for cloning the repository
+    let clone_dir = parent_dir.join("cloned_repo");
+
+    // Clone the repository into the parent directory
+    let output = Command::new("git")
+        .arg("clone")
+        .arg(repo_url)
+        .arg(&clone_dir)
+        .output()
+        .with_context(|| "Failed to execute git clone")?;
+    
+    if !output.status.success() {
+        return Err(anyhow::anyhow!("Failed to clone repository"));
+    }
+
+    // Change current directory to the cloned repository
+    std::env::set_current_dir(&clone_dir)
+        .with_context(|| format!("Failed to change directory to {}", clone_dir.display()))?;
+
+    // Write .env file
+    let mut env_file = std::fs::File::create(".env")
+        .with_context(|| "Failed to create .env file")?;
+    env_file.write_all(dotenv_contents.as_bytes())
+        .with_context(|| "Failed to write to .env file")?;
+
+    // Run npm install
+    let output = Command::new("npm")
+        .arg("install")
+        .output()
+        .with_context(|| "Failed to execute npm install")?;
+    
+    if !output.status.success() {
+        return Err(anyhow::anyhow!("Failed to install npm dependencies"));
+    }
+    // Run npm run dev in a terminal
+    Command::new("gnome-terminal")
+        .arg("--wait") // Add the --wait option to keep the terminal open
+        .arg("--")
+        .arg("npm")
+        .arg("run")
+        .arg("dev")
+        .spawn()
+        .with_context(|| "Failed to execute npm run dev in a terminal")?;
+
+    thread::sleep(Duration::from_secs(6)); // giving NextJS time to compile code
+    let _ = log_and_run(test_path, "false").await;
+    Ok((clone_dir))
+}
+
 async fn execute_step_test_edit(step: &mut Value) -> Result<()> {
   if let Some(files) = step["files"].as_array_mut() {
       for file in files {
@@ -89,10 +266,13 @@ async fn execute_step_no_debug(step: &mut Value) -> Result<()> {
 
   Ok(())
 }
-async fn execute_step(step: &mut Value) -> Result<()> {
+async fn execute_step(step: &mut Value, cloned_dir: PathBuf) -> Result<()> {
   if let Some(files) = step["files"].as_array_mut() {
       for file in files {
-          add_file_contents(file);
+        if std::env::var("CLONING").unwrap() == "true" {
+          add_full_path(file, cloned_dir.clone());
+        }
+        add_file_contents(file);
       }
   }
 
@@ -103,8 +283,7 @@ async fn execute_step(step: &mut Value) -> Result<()> {
   let mut curr_prompt = get_prompt(&step);
   let mut user_prompt = get_prompt(&step);
   let mut trimmed_code = String::new();
-  let api_key = std::env::var("API_KEY").context("API_KEY environment variable not found")?;
-
+  let api_key = std::env::var("CHATGPT_APIKEY").context("API_KEY environment variable not found")?;
 
   println!("\ncurr_prompt: {}", &curr_prompt);
   let mut code_attempt = prompt(&curr_prompt, &api_key).await?;
@@ -136,10 +315,18 @@ async fn execute_step(step: &mut Value) -> Result<()> {
   }
   //println!("{}", get_debug_details(&trimmed_code, &code_attempts, &logs, &passing_responses)?);
   if !passing {
-    println!("{}", get_debug_details(&trimmed_code, &code_attempts, &logs, &passing_responses)?);
+    //println!("{}", get_debug_details(&trimmed_code, &code_attempts, &logs, &passing_responses)?);
     anyhow::bail!("Debugging attempts failed. Aborting execution.");
   }
   Ok(())
+}
+
+fn add_full_path(file: &mut Value, cloned_dir: PathBuf) {
+  let file_path = file["filePath"].as_str().unwrap();
+  let updated_file_path = cloned_dir.join(file_path);
+  // Update the "filePath" field in the file object
+  file["filePath"] = json!(updated_file_path.to_string_lossy());
+  println!("Updated filePath: {}", file["filePath"]);
 }
 
 fn add_file_contents(file: &mut Value) {
@@ -242,7 +429,7 @@ async fn get_passing_response(code: &str, logs: &str, user_prompt: &str, api_key
   };
   //println!("Logs from running the file: {}", logs);
 
-  let response_prompt = format!("Here is the code: {}\n\nNote that it should be doing exactly what the user wanted, which was '{}'. Based on the following logs, does this code look like it ran properly? Console logs:\n{}\n[end of logs]\n\nIMPORTANT: Please include the word yes, or no, in your response for clarity, explain why, and provide a corrected \"{}\", if necessary (include any missing function calls, especially if the logs are empty yet functions are defined, in your corrected \"{}\").", code, user_prompt, logs, target, target);
+  let response_prompt = format!("Here is the code: {}\n\nNote that it should be doing exactly what the user wanted, which was '{}'. Based on the following logs, does this code look like it ran properly? (Note in React it is normal if logs repeat twice on component initialization) Console logs:\n{}\n[end of logs]\n\nIMPORTANT: Please include the word yes, or no, in your response for clarity, explain why, and provide a corrected \"{}\", if necessary (include any missing function calls, especially if the logs are empty yet functions are defined, in your corrected \"{}\").", code, user_prompt, logs, target, target);
   let response = prompt(&response_prompt, &api_key).await?;
 
   //println!("ChatGPT evaluation of logs: {}", response);

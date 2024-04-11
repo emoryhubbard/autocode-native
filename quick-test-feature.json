@@ -1,4 +1,6 @@
 {
+  "repoURL": "https://github.com/emoryhubbard/tailwindify.git",
+  "dotenvContents": "SESSION_PASSWORD=\"j7kZg6sxEEqWUTfozhiZHtg04PKWyx5x\"",
   "description": "Add a Last-Visited indicator on the home page.",
   "status": "Not Started",
   "steps": [
@@ -8,18 +10,19 @@
         "files": [
           {
             "fileName": "page.jsx",
-            "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/page.jsx",
+            "filePath": "src/app/page.jsx",
             "fileContents": "// Content of page.jsx file",
             "isTarget": true
           },
           {
             "fileName": "utils.mjs",
-            "filePath": "/home/emoryhubbardiv/Documents/tailwindify/src/app/components/utils.mjs",
+            "filePath": "src/app/components/utils.mjs",
             "fileContents": "// Content of utils.mjs file",
             "isTarget": false
           }
         ],
-        "testPath": "http://localhost:3000"
+        "testPath": "http://localhost:3000",
+        "showHTML": "false"
       }
     ]
 }

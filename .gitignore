@@ -1,3 +1,5 @@
 /target
 .env
 serviceAccountKey.json
+hidden-test-feature.json
+feature.json
