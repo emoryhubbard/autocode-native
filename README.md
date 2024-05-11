@@ -1,3 +1,7 @@
+# Autocode Client
+
+The Autocode Client is the Node successor to the Autocode Native application. Autocode Native was refactored from Rust to TypeScript to allow for more rapid prototyping in this stage of development.
+
 # Autocode Native
 
 Autocode Native is a Rust-based application developed to run natively on Ubuntu. It is designed to improve upon the [Autocode Classic](https://github.com/emoryhubbard/Autocode?tab=readme-ov-file#autocode-classic) web app by helping React developers automate adding features to their apps, with the goal of leveraging task decomposition and a task management algorithm to create incremental, tested changes before moving on to the next step of the job.
