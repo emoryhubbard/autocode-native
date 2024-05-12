@@ -11,13 +11,6 @@ dotenv.config();
 
 export async function executeSteps(feature: any) {
     let steps = feature["steps"];
-
-    if (feature["autocodeDotenv"]) {
-        for (const [key, value] of Object.entries(feature["autocodeDotenv"])) {
-            process.env[key] = value as string;
-        }
-    }
-
     const parentDir = path.resolve(__dirname, "..");
     const repoURL = feature["repoURL"];
     const repoName = repoURL.match(/\/([^/]+)\.git$/)?.[1];
@@ -174,17 +167,17 @@ function addFileContents(file: any) {
 }
 
 function getPrompt(step: any) {
-    let prompt = `Could you write a new ${step["target"]} with this modification: "${step["description"]}". In addition, could you write a simple console log statement(s) within its code to verify the change is working, which is highly likely to run (not lost in a function that isn't called)?`;
+    let PROMPT = '';
 
     const files = step["files"];
     for (const file of files) {
         const fileName = file["fileName"];
         const filePath = file["filePath"];
         const fileContents = file["fileContents"] ?? "No file contents";
-        prompt += ` Here is the current ${fileName} located at ${filePath}: "${fileContents}"\n`;
+        PROMPT += ` Here is the current ${fileName} located at ${filePath}: "${fileContents}"\n`;
     }
   
-    return prompt;
+    return PROMPT;
 }
 
 async function createOrModify(step: any, newContents: string) {

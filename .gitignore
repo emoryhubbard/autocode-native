@@ -8,3 +8,4 @@ node_modules
 short-test-feature.json
 long-test-feature.json
 long-test-feature2.json
+execute-steps-temp.ts
