@@ -1,11 +1,12 @@
 import { extractJSX } from "../library/extractjsx";
-import { prompt } from "../library/prompt";
 import { logAndRun } from "../library/log-and-run";
 import { getUpdatedFunctions } from "./get-updated-functions";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import * as child_process from "child_process";
+import  dynamicImport from '../library/dynamic-import';
+import { resolve } from 'path';
 
 dotenv.config();
 
@@ -121,6 +122,7 @@ async function executeStep(step: any, repoDir: string) {
     let trimmedCode = "";
 
     console.log("\ncurr_prompt:", currPrompt);
+    const { prompt } = await dynamicImport(resolve(__dirname, 'prompt.ts'));
     let codeAttempt = await prompt(currPrompt, process.env.CHATGPT_APIKEY as string);
 
     console.log("\ncode_attempt:", codeAttempt);
@@ -128,7 +130,7 @@ async function executeStep(step: any, repoDir: string) {
     const maxAttempts = 3;
     for (let i = 0; i < maxAttempts; i++) {
         codeAttempts.push(codeAttempt);
-        trimmedCode = await extractJSX(codeAttempt);
+        trimmedCode = extractJSX(codeAttempt);
         console.log("\ntrimmed_code:", trimmedCode);
         await createOrModify(step, trimmedCode);
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -167,17 +169,18 @@ function addFileContents(file: any) {
 }
 
 function getPrompt(step: any) {
-    let PROMPT = '';
+    const PROMPT = '';
+    let prompt = PROMPT;
 
     const files = step["files"];
     for (const file of files) {
         const fileName = file["fileName"];
         const filePath = file["filePath"];
         const fileContents = file["fileContents"] ?? "No file contents";
-        PROMPT += ` Here is the current ${fileName} located at ${filePath}: "${fileContents}"\n`;
+        prompt += ` Here is the current ${fileName} located at ${filePath}: "${fileContents}"\n`;
     }
   
-    return PROMPT;
+    return prompt;
 }
 
 async function createOrModify(step: any, newContents: string) {
@@ -215,6 +218,7 @@ async function getPassingResponse(code: string, logs: string, userPrompt: string
 
     const responsePrompt = `Here is the code: ${code}\n\nNote that it should be doing exactly what the user wanted, which was '${userPrompt}'. Based on the following logs, does this code look like it ran properly? Console logs:\n${logs}\n[end of logs]\n\nIMPORTANT: Please include the word yes, or no, in your response for clarity, explain why, and provide a corrected "${target}", if necessary (include any missing function calls, especially if the logs are empty yet functions are defined, in your corrected "${target}").`;
 
+    const { prompt } = await dynamicImport(resolve(__dirname, 'prompt.ts'));
     const response = await prompt(responsePrompt, process.env.CHATGPT_APIKEY as string);
 
     return response;

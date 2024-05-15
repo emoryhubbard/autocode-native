@@ -9,3 +9,15 @@ short-test-feature.json
 long-test-feature.json
 long-test-feature2.json
 execute-steps-temp.ts
+temp.ts
+/library/temp.ts
+/library/temp
+
+# Ignore all files within the directory
+library/temp/*
+
+# Except the directory itself
+!library/temp/
+
+# Ignore files ending with -temp.ts
+*-temp.ts
